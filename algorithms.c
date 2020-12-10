@@ -15,7 +15,7 @@ void array_create_from(struct array *self, const int *other, size_t size) {
   self->data = calloc(sizeof(int),size);
   self->capacity = size;
   self->size =size;
-  for(int i = 0; i<size ; ++i){
+  for(size_t i = 0; i<size ; ++i){
     self->data[i]= other[i];
   }
 }
@@ -39,7 +39,7 @@ bool array_equals(const struct array *self, const int *content, size_t size) {
   if(self->size !=size){
     return false ;
   }
-  for(int i = 0;i<size; i++){
+  for(size_t i = 0;i<size; i++){
     if(self->data[i]!= content[i]){
       return false;
     }
@@ -89,27 +89,22 @@ void array_insert(struct array *self, int value, size_t index) {
   
 }
 
-// void decal_gauche(struct array *self,size_t index){
-  
-//   size_t taille = self->size --; 
-
-//   for(size_t i =index ; i<=taille ; i++){
-//     self->data[i]= self->data[i+1];
-
-//   }
-  
-  
-// }
 void array_remove(struct array *self, size_t index) {
-  size_t taille = self->size --; 
+  if(index > self->size-1){
+    return;
+  } 
+  
+  self->size = self->size-1;
 
-  for(size_t i =index ; i<=taille ; i++){
+  for(size_t i =index ; i<=self->size-1; i++){
     self->data[i]= self->data[i+1];
-
   }
 }
 
 int array_get(const struct array *self, size_t index) {
+  if(index > self->size-1){
+    return 0;
+  }
   return self->data[index];
 }
 
@@ -166,50 +161,6 @@ bool array_is_sorted(const struct array *self) {
   return true;
 }
 
-// static void array_swap (struct array *self,ptrdiff_t  k, ptrdiff_t l ){
-//   if(k==l){
-//     return;
-//   }
-//   int temp = self->data[k];
-//   self->data[k]= self->data[l];
-//   self->data[l]= temp;
-// }
-// ptrdiff_t array_partition(struct array *self, ptrdiff_t i, ptrdiff_t j) {
-
-//   int pivot = self->data[i];
-//   printf("%d", pivot);
-//   int small = i-1;
-//   array_swap(self, i,j);
-//   for(size_t k = i; k<=j; ++k){
-//     if(self->data[k]<pivot){
-//       ++small;
-//       array_swap(self,small,k);
-//     }
-//   }
-//   array_swap(self, small+1, j);
-//   return small+1;
-
-
-// }
-
-// static void array_quick_sort_partial(struct array *self,ptrdiff_t i, ptrdiff_t j) {
-  
-//   ptrdiff_t pi;
-//   if(i<j){
-//     pi = array_partition(self, i, j);
-//     array_quick_sort_partial(self,i, pi-1);
-//     array_quick_sort_partial(self, pi+1,j-1);
-//   }
-//  }
-
-// void array_quick_sort(struct array *self) {
-//   if(array_is_sorted(self)){
-//     return;
-//   }
-//   size_t low = 0;
-//   size_t high = self->size;
-//   array_quick_sort_partial(self, low, high);
-// }
 
 static void array_swap (struct array *self,ptrdiff_t  k, ptrdiff_t l ){
   int temp = self->data[k];
@@ -245,20 +196,62 @@ void array_quick_sort(struct array *self) {
 
 
 
-//void heap_insert 
 
+void heapify(struct array *self, int n, int i)
+{
+  int largest = i; // Initialize largest as root
+  int l = 2 * i + 1; // left = 2*i + 1
+  int r = 2 * i + 2; // right = 2*i + 2
 
+  // If left child is larger than root
+  if (l < n && self->data[l] > self->data[largest])
+      largest = l;
 
-void array_heap_sort(struct array *self) {
-  for (size_t i =0 ; i< self->size ; ++i){
-    int value = self->data[i];
-    array_heap_add (self,i, value);
+  // If right child is larger than largest so far
+  if (r < n && self->data[r] > self->data[largest])
+      largest = r;
 
+  // If largest is not root
+  if (largest != i) {
+     array_swap(self,i,largest);
+
+      // Recursively heapify the affected sub-tree
+      heapify(self, n, largest);
   }
 }
+void array_heap_sort(struct array *self) {
+    
+  size_t n = self->size;
+  // Build heap (rearrange array)
+  for (int i = n / 2 - 1; i >= 0; i--)
+      heapify(self, n, i);
 
-bool array_is_heap(const struct array *self) {
+  // One by one extract an element from heap
+  for (int i = n - 1; i > 0; i--) {
+      // Move current root to end
+      array_swap(self,0,i);
+
+      // call max heapify on the reduced heap
+      heapify(self, i, 0);
+  }
+  
+}
+
+
+bool isHeap(const struct array *self, int i, int n)
+{
+  // If a leaf node
+  if (i >= (n) / 2)
+    return true;
+
+  if (self->data[i] >= self->data[2 * i + 1] &&  self->data[i] >= self->data[2 * i + 2] && 
+  isHeap(self, 2 * i + 2, n)&& isHeap(self, 2 * i + 1, n)){
+    return true;
+  }
   return false;
+}
+bool array_is_heap(const struct array *self) {
+  return isHeap(self,0,self->size);
 }
 
 void array_heap_add(struct array *self, int value) {
@@ -276,7 +269,7 @@ void array_heap_add(struct array *self, int value) {
 }
 
 int array_heap_top(const struct array *self) {
-  return 42;
+  return self->data[0];
 }
 
 void array_heap_remove_top(struct array *self) {
@@ -291,23 +284,21 @@ void array_heap_remove_top(struct array *self) {
     }
     size_t j = (self->data[lt]>self->data[rt]) ? lt : rt;
     array_swap(self,i,j);
-
+    i=j;
   }
 }
-//https://www.programiz.com/dsa/heap-sort
+
 /*
  * list
  */
 
 void list_create(struct list *self) {
-  //printf("ici");
+  
   self->first=NULL;
 }
 
 void list_create_from(struct list *self, const int *other, size_t size) {
-  //printf("createfrom");
-
-  struct list_node *node = malloc (sizeof(struct list_node));
+   struct list_node *node = malloc (sizeof(struct list_node));
   node->data = other[0];
   self->first= node;
   struct list_node *curr1 =  self-> first;
@@ -317,14 +308,11 @@ void list_create_from(struct list *self, const int *other, size_t size) {
     node1->data = other[i];
     curr1->next = node1;
     curr1=curr1-> next;
-     // printf("lalalalalaqlalalal\n");
   } 
   curr1->next =NULL;
 }
 
 void list_destroy(struct list *self) {
-  
-  //printf("destroys");
   if(list_empty(self)){
     return;
   }
@@ -346,8 +334,6 @@ bool list_empty(const struct list *self) {
 }
 
 size_t list_size(const struct list *self) {
-  //printf("size");
-  
   if (self->first==NULL){
     return 0;
   }
@@ -398,11 +384,9 @@ void list_pop_front(struct list *self) {
   if(self->first ==NULL){
     return;
   }
-  //afficher_list (self);
   struct list_node *curr = self->first;
   self->first= curr->next;
   free(curr);
-  //afficher_list (self);
 }
 
 void list_push_back(struct list *self, int value) {
@@ -444,15 +428,16 @@ void list_pop_back(struct list *self) {
 
 
 void list_insert(struct list *self, int value, size_t index) {
-  struct list_node *node = malloc(sizeof(struct list_node));
-  node->data = value;
-  node->next =NULL;
+  
   struct list_node *curr = self->first;
   struct list_node *curr1 = curr->next;
   if(index== 0){
     list_push_front(self,value);
     return;
   }
+  struct list_node *node = malloc(sizeof(struct list_node));
+  node->data = value;
+  node->next =NULL;
   size_t i = 1;
   while (i<index && curr->next !=NULL){
     curr= curr1;
@@ -497,7 +482,7 @@ void list_remove(struct list *self, size_t index) {
 
 int list_get(const struct list *self, size_t index) {
 
-  if(self->first == NULL || index<0){
+  if(self->first == NULL ){
     return 0;
   }
   size_t i = 0;
@@ -536,7 +521,7 @@ void list_set(struct list *self, size_t index, int value) {
 
 size_t list_search(const struct list *self, int value) {
   if(self->first==NULL){
-    return;
+    return 0;
   }
   struct list_node *curr = self->first ;
   size_t i =0;
@@ -669,47 +654,225 @@ void list_merge_sort(struct list *self) {
  */
 
 void tree_create(struct tree *self) {
+  self->root=NULL;
 }
 
+void tree_destroy_partial (struct tree_node *node){
+  if(node == NULL){
+    return;
+  }
+  tree_destroy_partial(node->left);
+  tree_destroy_partial(node->right);
+  free(node);
+
+}
 
 void tree_destroy(struct tree *self) {
+
+  tree_destroy_partial (self->root);  
+  self->root=NULL;
+
 }
 
+
+bool tree_contains_partial (const struct tree_node *node, int value){
+  if(node==NULL){
+    return false;
+  }
+  if (value<node->data){
+    return tree_contains_partial(node->left,value);
+  }
+  if (value>node->data){
+    return tree_contains_partial(node->right,value);
+  }
+  return true;
+}
 
 bool tree_contains(const struct tree *self, int value) {
-  return false;
+  return tree_contains_partial(self->root,value);
 }
 
+
+
+struct tree_node* tree_insert_partial (struct tree_node *node,int value){
+
+  if(node ==NULL){
+    struct tree_node *tree = malloc(sizeof (struct tree_node));
+    tree->left=tree->right=NULL;
+    tree->data = value;
+    return tree;
+  }
+
+  if(value < node->data){
+   node->left = tree_insert_partial(node->left,value);
+   return node;
+  }
+
+  if(value > node->data){
+    node->right = tree_insert_partial(node->right,value);
+    return node;
+  }
+  return node;  
+
+}
 
 bool tree_insert(struct tree *self, int value) {
-  return false;
-}
-
-
-bool tree_remove(struct tree *self, int value) {
-  return false;
-}
-
-bool tree_empty(const struct tree *self) {
+  if(tree_contains(self,value)){
+    return false;
+  }
+  self->root = tree_insert_partial(self->root,value);
   return true;
 }
 
 
-size_t tree_size(const struct tree *self) {
-  return -1;
+
+struct tree_node* minValueNode(struct tree_node* node)
+{
+  struct tree_node* current = node;
+
+  /* loop down to find the leftmost leaf */
+  while (current && current->left != NULL)
+    current = current->left;
+
+  return current;
 }
 
+
+struct tree_node* deleteNode(struct tree_node* root, int key)
+{
+  // base case
+  if (root == NULL)
+    return root;
+
+  
+  if (key < root->data)
+    root->left = deleteNode(root->left, key);
+
+  
+  else if (key > root->data)
+      root->right = deleteNode(root->right, key);
+
+  
+  else {
+    // node with only one child or no child
+    if (root->left == NULL) {
+      struct tree_node* temp = root->right;
+      free(root);
+      return temp;
+    }
+    else if (root->right == NULL) {
+      struct tree_node* temp = root->left;
+      free(root);
+      return temp;
+    }
+    struct tree_node* temp = minValueNode(root->right);
+
+    root->data = temp->data;
+    root->right = deleteNode(root->right, temp->data);
+  }
+  return root;
+}
+
+
+
+
+bool tree_remove(struct tree *self, int value) {
+  if(!tree_contains(self,value)){
+    return false;
+  }
+
+  self->root = deleteNode(self->root,value);
+  return true;
+}
+  
+
+bool tree_empty(const struct tree *self) {
+  return self->root==NULL;
+}
+
+size_t max (size_t a, size_t b){
+  return (a<=b)? b : a;
+}
+
+size_t tree_size_partial (const struct tree_node *node){
+  
+  if(node== NULL){
+    return 0;
+  }
+  
+  return tree_size_partial(node->left)+1  +tree_size_partial(node->right);
+}
+
+size_t tree_size(const struct tree *self) {
+  return tree_size_partial(self->root);  
+  
+}
+
+size_t tree_height_partial (const struct tree_node *node){
+  if(node== NULL){
+    return 0;
+  }
+  size_t hg = tree_height_partial(node->left);
+  size_t hd = tree_height_partial(node->right);
+  return 1 + max(hg,hd);
+}
 
 size_t tree_height(const struct tree *self) {
-  return -1;
+  return tree_height_partial(self->root);
 }
+
+
+void tree_walk_pre_order_partial (const struct tree_node *node , tree_func_t func, void *user_data){
+  if (node == NULL) {
+    return; 
+  }
+     /* first print data of node */
+  func (node->data,user_data);   
+  
+     /* then recur on left sutree */
+  tree_walk_pre_order_partial(node->left,func,user_data);   
+  
+     /* now recur on right subtree */
+  tree_walk_pre_order_partial(node->right,func,user_data);
+}
+
 
 
 void tree_walk_pre_order(const struct tree *self, tree_func_t func, void *user_data)  {
+  tree_walk_pre_order_partial(self->root,func,user_data);
 }
 
+void tree_walk_in_order_partial(const struct tree_node *node, tree_func_t func, void *user_data) {
+
+  if (node == NULL) 
+    return; 
+
+  tree_walk_in_order_partial(node->left,func,user_data);; 
+
+  func(node->data,user_data);   
+
+  tree_walk_in_order_partial(node->right,func,user_data); 
+
+}
 void tree_walk_in_order(const struct tree *self, tree_func_t func, void *user_data) {
+  tree_walk_in_order_partial(self->root,func,user_data);
+}
+
+void tree_walk_post_order_partial(const struct tree_node *node, tree_func_t func, void *user_data) {
+
+  if (node == NULL) 
+    return; 
+
+  // first recur on left subtree 
+  tree_walk_post_order_partial(node->left,func,user_data); 
+
+  // then recur on right subtree 
+  tree_walk_post_order_partial(node->right,func,user_data); 
+
+  // now deal with the node 
+  func(node->data,user_data); 
 }
 
 void tree_walk_post_order(const struct tree *self, tree_func_t func, void *user_data) {
+ tree_walk_post_order_partial(self->root,func,user_data);
 }
